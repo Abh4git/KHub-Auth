@@ -1,0 +1,59 @@
+version: "3.6"
+
+services:
+    # Create a new container to run MongoDB
+    db:
+        image: mongo:4.4.2
+        container_name: khub-auth-mongodb
+        ports:
+          - "27018:27017"  
+        networks:
+          - khub-auth-api-network
+        restart: always
+        volumes:
+          - mongo-data:/data/auth
+          - ./mongo-init.js:/docker-entrypoint-initdb.d/mongodbinit.js:ro
+        environment:
+          MONGO_INITDB_ROOT_USERNAME: mongoadmin
+          MONGO_INITDB_ROOT_PASSWORD: secret
+          MONGO_INITDB_DATABASE: authdb
+
+    db-admin:
+        image: mongo-express
+        container_name: khub-auth-mongodb-admin
+        ports:
+          - "8081:8081"  
+        networks:
+          - khub-auth-api-network
+        environment:
+          ME_CONFIG_MONGODB_SERVER: khub-auth-mongodb
+          ME_CONFIG_MONGODB_ADMINUSERNAME: mongoadmin
+          ME_CONFIG_MONGODB_ADMINPASSWORD: secret
+        depends_on:
+          - db
+
+    # Run the Dockerfile to build a project in the current directory
+    api:
+        image: khub-auth-api
+        ports:
+          - "8082:8082"
+        networks:
+          - khub-auth-api-network
+          - khub-wide-network
+        environment:
+          ME_CONFIG_MONGODB_SERVER: khub-auth-mongodb
+          ME_CONFIG_MONGODB_ADMINUSERNAME: mongoadmin
+          ME_CONFIG_MONGODB_ADMINPASSWORD: secret
+          WAIT_HOSTS: khub-auth-mongodb:27017
+        depends_on:
+          - db 
+
+  
+networks:
+     khub-wide-network:
+            external: true
+     khub-auth-api-network:
+            driver: bridge
+volumes:
+  mongo-data:
+    driver: local
