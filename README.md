@@ -1,2 +1,2 @@
-# KnowledgeHub-Auth
+# KHub-Auth
 Authentication Service for KnowledgeHub
